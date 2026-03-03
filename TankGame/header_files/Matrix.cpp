@@ -3,6 +3,10 @@
 #include <iostream>
 #include <math.h>
 
+namespace {
+constexpr float kPi = 3.14159265358979323846f;
+}
+
 //!Constructor
 Matrix4x4::Matrix4x4()
 {
@@ -143,7 +147,7 @@ void Matrix4x4::rotate(float angle, float x, float y, float z)
 	z/=length;
 	
 	// Convert Degrees to Radians
-	float rads = angle * (2.f * M_PI)/360.f;
+	float rads = angle * (2.f * kPi)/360.f;
 	
 	//Set up variables
 	float c = cos(rads);
@@ -192,7 +196,7 @@ void Matrix4x4::ortho(float left, float right, float bottom, float top, float zN
 //! Perspective Projection Matrix Funtion
 void Matrix4x4::perspective(float fovy, float aspect, float zNear, float zFar)
 {
-	float rad 	= fovy * (2.f * M_PI)/360.f;
+	float rad 	= fovy * (2.f * kPi)/360.f;
 	float range 	= tan(rad /2) * zNear;	
 	float left 	= -range * aspect;
 	float right 	= range * aspect;

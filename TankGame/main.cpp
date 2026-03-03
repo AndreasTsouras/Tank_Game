@@ -10,9 +10,7 @@
 #include <iostream>
 #include <string>
 #define STB_IMAGE_IMPLEMENTATION
-#include <C:/Program Files/Msys/mingw64/include/stb/stb_image.h>
-#define STB_TRUETYPE_IMPLEMENTATION
-#include "C:/Program Files/Msys/mingw64/include/stb/stb_truetype.h"
+#include "header_files/stb_image.h"
 #include <cstdlib>
 #include <ctime>
 #include <vector>
@@ -20,25 +18,30 @@
 #include <fstream>
 #include <vector>
 #include <glm/glm.hpp>
+#include <cmath>
 
 //All #defines
 #define GRID_SIZE 10
-//BMP file definitions
-#define CRATE_BMP "C:/Users/tsour/CLionProjects/TankGame/models/crate.bmp"
-#define BALL_BMP "C:/Users/tsour/CLionProjects/TankGame/models/ball.bmp"
-#define COIN_BMP "C:/Users/tsour/CLionProjects/TankGame/models/coin.bmp"
-#define HUMVEE_BMP "C:/Users/tsour/CLionProjects/TankGame/models/humvee.bmp"
-//OBJ file definitions
-#define BALL_OBJ "C:/Users/tsour/CLionProjects/TankGame/models/ball.obj"
-#define CUBE_OBJ "C:/Users/tsour/CLionProjects/TankGame/models/cube.obj"
-#define BACK_WHEEL_OBJ "C:/Users/tsour/CLionProjects/TankGame/models/back_wheel.obj"
-#define CHASSIS_OBJ "C:/Users/tsour/CLionProjects/TankGame/models/chassis.obj"
-#define COIN_OBJ "C:/Users/tsour/CLionProjects/TankGame/models/coin.obj"
-#define FRONT_WHEEL_OBJ "C:/Users/tsour/CLionProjects/TankGame/models/front_wheel.obj"
-#define TURRET_OBJ "C:/Users/tsour/CLionProjects/TankGame/models/turret.obj"
+
+#ifndef TANKGAME_ASSET_DIR
+#define TANKGAME_ASSET_DIR "."
+#endif
+
+const std::string CRATE_BMP = std::string(TANKGAME_ASSET_DIR) + "/models/crate.bmp";
+const std::string BALL_BMP = std::string(TANKGAME_ASSET_DIR) + "/models/ball.bmp";
+const std::string COIN_BMP = std::string(TANKGAME_ASSET_DIR) + "/models/coin.bmp";
+const std::string HUMVEE_BMP = std::string(TANKGAME_ASSET_DIR) + "/models/humvee.bmp";
+const std::string BALL_OBJ = std::string(TANKGAME_ASSET_DIR) + "/models/ball.obj";
+const std::string CUBE_OBJ = std::string(TANKGAME_ASSET_DIR) + "/models/cube.obj";
+const std::string BACK_WHEEL_OBJ = std::string(TANKGAME_ASSET_DIR) + "/models/back_wheel.obj";
+const std::string CHASSIS_OBJ = std::string(TANKGAME_ASSET_DIR) + "/models/chassis.obj";
+const std::string COIN_OBJ = std::string(TANKGAME_ASSET_DIR) + "/models/coin.obj";
+const std::string FRONT_WHEEL_OBJ = std::string(TANKGAME_ASSET_DIR) + "/models/front_wheel.obj";
+const std::string TURRET_OBJ = std::string(TANKGAME_ASSET_DIR) + "/models/turret.obj";
 
 
 using namespace std;
+constexpr double kPi = 3.14159265358979323846;
 
 //! Array of key states
 bool keyStates[256];
@@ -156,12 +159,12 @@ unsigned int loadCubemap(vector<std::string> faces) {
 }
 
 vector<std::string> facesCubemap = {
-        "C:/Users/tsour/CLionProjects/TankGame/skybox/right.jpg",
-        "C:/Users/tsour/CLionProjects/TankGame/skybox/left.jpg",
-        "C:/Users/tsour/CLionProjects/TankGame/skybox/top.jpg",
-        "C:/Users/tsour/CLionProjects/TankGame/skybox/bottom.jpg",
-        "C:/Users/tsour/CLionProjects/TankGame/skybox/front.jpg",
-        "C:/Users/tsour/CLionProjects/TankGame/skybox/back.jpg"
+        std::string(TANKGAME_ASSET_DIR) + "/skybox/right.jpg",
+        std::string(TANKGAME_ASSET_DIR) + "/skybox/left.jpg",
+        std::string(TANKGAME_ASSET_DIR) + "/skybox/top.jpg",
+        std::string(TANKGAME_ASSET_DIR) + "/skybox/bottom.jpg",
+        std::string(TANKGAME_ASSET_DIR) + "/skybox/front.jpg",
+        std::string(TANKGAME_ASSET_DIR) + "/skybox/back.jpg"
 };
 
 float skyboxVertices[] = {
@@ -248,8 +251,19 @@ int numberofcoins = 0;
 int playerscore = 0;
 int maxtime = 60; //make a tag for level as in an int which will then correlate to a string which will then be passed onto the input file stream which will be controlled by the ammount of coins collected, if the ammount of coins collected is equal to the total ammount of coins in the map then increment level counter and change the string
 
+bool inMazeBounds(int x, int z) {
+    return x >= 0 && x < rows && z >= 0 && z < columns;
+}
+
+int mazeCell(int x, int z) {
+    if (!inMazeBounds(x, z)) {
+        return 0;
+    }
+    return maze[x][z];
+}
+
 void loadLevel(int level) {
-    string filename = "C:/Users/tsour/CLionProjects/TankGame/maps/maze-level" + to_string(level) + ".txt";
+    string filename = std::string(TANKGAME_ASSET_DIR) + "/maps/maze-level" + to_string(level) + ".txt";
     ifstream file(filename);
 
     if (file.is_open()) {
@@ -309,7 +323,7 @@ int main(int argc, char** argv)
     coin.loadOBJ(COIN_OBJ);
 
     //Init Camera Manipultor
-    cameraManip.setPanTiltRadius(0.0,2*M_PI,4.0);
+    cameraManip.setPanTiltRadius(0.0,2*kPi,4.0);
     cameraManip.setFocus(chassis.getMeshCentroid());
 
     //initialise textures
@@ -432,8 +446,14 @@ bool initGL(int argc, char** argv)
 void initShader()
 {
     //Create shader
-    shaderProgramID = Shader::LoadFromFile("C:/Users/tsour/CLionProjects/TankGame/shader.vert","C:/Users/tsour/CLionProjects/TankGame/shader.frag");
-    skyboxShader = Shader::LoadFromFile("C:/Users/tsour/CLionProjects/TankGame/cubemap.vert","C:/Users/tsour/CLionProjects/TankGame/cubemap.frag");
+    shaderProgramID = Shader::LoadFromFile(
+            std::string(TANKGAME_ASSET_DIR) + "/shader.vert",
+            std::string(TANKGAME_ASSET_DIR) + "/shader.frag"
+    );
+    skyboxShader = Shader::LoadFromFile(
+            std::string(TANKGAME_ASSET_DIR) + "/cubemap.vert",
+            std::string(TANKGAME_ASSET_DIR) + "/cubemap.frag"
+    );
 
     // Get a handle for our vertex position buffer
     vertexPositionAttribute = glGetAttribLocation(shaderProgramID, "aVertexPosition");
@@ -554,7 +574,7 @@ void DrawBall() {
                     balls[i].isActive = false;
                 }
 
-                if (maze[GridBallPosX][GridBallPosZ] == 2 && balls[i].position.y+1.3>=0.6){
+                if (mazeCell(GridBallPosX, GridBallPosZ) == 2 && balls[i].position.y+1.3>=0.6){
                     balls[i].isActive = false;
                     maze[GridBallPosX][GridBallPosZ] -=1;
                     coincounter++;
@@ -674,13 +694,13 @@ void Tank() {
     GridPos.z = GridPosZ;
 
 
-    if (maze[GridPosX][GridPosZ]==2){
+    if (mazeCell(GridPosX, GridPosZ)==2){
         //delete coin and increment the coin counter
         maze[GridPosX][GridPosZ] -=1;
         coincounter++;
         playerscore+=100;
     }
-    else if (maze[GridPosX][GridPosZ]!=1 && maze[GridPosX][GridPosZ]!=2){
+    else if (mazeCell(GridPosX, GridPosZ)!=1 && mazeCell(GridPosX, GridPosZ)!=2){
         TankPos.y-=0.1;
         if(TankPos.y<=-28){
             TankPos.x = 0;
@@ -706,6 +726,9 @@ void fps() {
     unsigned int currentTime = glutGet(GLUT_ELAPSED_TIME);
     unsigned int elapsedTime = currentTime - previousTime;
     previousTime = currentTime;
+    if (elapsedTime == 0) {
+        elapsedTime = 1;
+    }
     float fps = 1000.0f / elapsedTime;
 
     // Update FPS buffer and sum
@@ -837,7 +860,7 @@ void display(void) {
         ModelViewMatrix.toIdentity();
         ModelViewMatrix = cameraManip.apply(ModelViewMatrix);
         cameraManip.setFocus(Vector3f(TankPos.x, TankPos.y, TankPos.z));
-        cameraManip.setPanTiltRadius(turretangle*(M_PI/180), -0.8, 4.0);
+        cameraManip.setPanTiltRadius(turretangle*(kPi/180.0), -0.8, 4.0);
         //Calls Draw maze function.
         Draw_Maze();
         //Calls Tank function.
@@ -956,7 +979,7 @@ double timePressedDurationS = 0;
 void handleKeys()
 {
     shoot = false;
-    if((maze[int(GridPos.x)][int(GridPos.z)]==1 || maze[int(GridPos.x)][int(GridPos.z)]==2) && playerlives!=0 && !gameover){
+    if((mazeCell(int(GridPos.x), int(GridPos.z))==1 || mazeCell(int(GridPos.x), int(GridPos.z))==2) && playerlives!=0 && !gameover){
         if (keyStates['w'] || keyStates['W'])
         {
             if (timePressedStart == 0) // Button is just pressed now
@@ -970,8 +993,8 @@ void handleKeys()
                 float acceleration = velocity * timePressedDuration * 5;
                 speed = acceleration;
             }
-            float forwardX = sin(angle * (M_PI / 180.0)); // Convert angle to radians
-            float forwardZ = cos(angle * (M_PI / 180.0)); // Convert angle to radians
+            float forwardX = sin(angle * (kPi / 180.0)); // Convert angle to radians
+            float forwardZ = cos(angle * (kPi / 180.0)); // Convert angle to radians
             TankPos.x += speed * forwardX;
             TankPos.z += speed * forwardZ;
             wheelangle+=10;
@@ -999,8 +1022,8 @@ void handleKeys()
                 speed += deceleration;
             }
 
-            float backwardX = -sin(angle * (M_PI / 180.0)); // Convert angle to radians
-            float backwardZ = -cos(angle * (M_PI / 180.0)); // Convert angle to radians
+            float backwardX = -sin(angle * (kPi / 180.0)); // Convert angle to radians
+            float backwardZ = -cos(angle * (kPi / 180.0)); // Convert angle to radians
             TankPos.x -= speed * backwardX;
             TankPos.z -= speed * backwardZ;
             wheelangle-=10;
@@ -1030,14 +1053,14 @@ void handleKeys()
             shootTimer = glutGet(GLUT_ELAPSED_TIME);
             shootReady = false;
 
-            const float newturretangleX =  sin(turretangle * (M_PI / 180.0));
-            const float newturretangleZ =  cos(turretangle * (M_PI / 180.0));
+            const float newturretangleX =  sin(turretangle * (kPi / 180.0));
+            const float newturretangleZ =  cos(turretangle * (kPi / 180.0));
             // Find an inactive ball object and activate it
             for (int i = 0; i < balls.size(); ++i) {
                 if (!balls[i].isActive) {
                     balls[i].position = turretTip; // Set the ball's initial position
-                    balls[i].angle.x = sin(turretangle * (M_PI / 180.0));
-                    balls[i].angle.y = cos(turretangle * (M_PI / 180.0));
+                    balls[i].angle.x = sin(turretangle * (kPi / 180.0));
+                    balls[i].angle.y = cos(turretangle * (kPi / 180.0));
                     balls[i].isActive = true; // Activate the ball
                     ballActive = true;
                     break; // Exit the loop after activating one ball
@@ -1069,7 +1092,7 @@ void mouse(int button, int state, int x, int y)
 int previousX = 0;
 
 void motion(int x, int y) {
-    if((maze[int(GridPos.x)][int(GridPos.z)]==1 || maze[int(GridPos.x)][int(GridPos.z)]==2) && playerlives!=0 && !gameover) {
+    if((mazeCell(int(GridPos.x), int(GridPos.z))==1 || mazeCell(int(GridPos.x), int(GridPos.z))==2) && playerlives!=0 && !gameover) {
         cameraPan = cameraManip.getPan();
         // Calculate the change in mouse position from the previous position
         int deltaX = x - previousX;

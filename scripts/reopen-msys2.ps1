@@ -18,6 +18,9 @@ function Resolve-Msys2BashPath {
     ) | Where-Object { $_ -and $_.Trim().Length -gt 0 } | Select-Object -Unique
 
     foreach ($root in $roots) {
+        if (!(Test-Path $root)) {
+            continue
+        }
         $candidate = Join-Path $root "usr\bin\bash.exe"
         if (Test-Path $candidate) {
             return $candidate

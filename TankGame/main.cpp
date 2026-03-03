@@ -19,29 +19,41 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include <cmath>
+#include <filesystem>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 //All #defines
 #define GRID_SIZE 10
 
-#ifndef TANKGAME_ASSET_DIR
-#define TANKGAME_ASSET_DIR "."
-#endif
-
-const std::string CRATE_BMP = std::string(TANKGAME_ASSET_DIR) + "/models/crate.bmp";
-const std::string BALL_BMP = std::string(TANKGAME_ASSET_DIR) + "/models/ball.bmp";
-const std::string COIN_BMP = std::string(TANKGAME_ASSET_DIR) + "/models/coin.bmp";
-const std::string HUMVEE_BMP = std::string(TANKGAME_ASSET_DIR) + "/models/humvee.bmp";
-const std::string BALL_OBJ = std::string(TANKGAME_ASSET_DIR) + "/models/ball.obj";
-const std::string CUBE_OBJ = std::string(TANKGAME_ASSET_DIR) + "/models/cube.obj";
-const std::string BACK_WHEEL_OBJ = std::string(TANKGAME_ASSET_DIR) + "/models/back_wheel.obj";
-const std::string CHASSIS_OBJ = std::string(TANKGAME_ASSET_DIR) + "/models/chassis.obj";
-const std::string COIN_OBJ = std::string(TANKGAME_ASSET_DIR) + "/models/coin.obj";
-const std::string FRONT_WHEEL_OBJ = std::string(TANKGAME_ASSET_DIR) + "/models/front_wheel.obj";
-const std::string TURRET_OBJ = std::string(TANKGAME_ASSET_DIR) + "/models/turret.obj";
-
-
 using namespace std;
+namespace fs = std::filesystem;
 constexpr double kPi = 3.14159265358979323846;
+
+std::string assetRootPath;
+
+std::string getExecutableDirectory()
+{
+#ifdef _WIN32
+    char modulePath[MAX_PATH];
+    DWORD pathLength = GetModuleFileNameA(nullptr, modulePath, MAX_PATH);
+    if (pathLength > 0) {
+        return fs::path(modulePath).parent_path().generic_string();
+    }
+#endif
+    return fs::current_path().generic_string();
+}
+
+void initAssetRoot()
+{
+    assetRootPath = (fs::path(getExecutableDirectory()) / "assets").generic_string();
+}
+
+std::string assetPath(const std::string& relativePath)
+{
+    return (fs::path(assetRootPath) / relativePath).generic_string();
+}
 
 //! Array of key states
 bool keyStates[256];
@@ -87,10 +99,10 @@ Mesh coin;
 
 
 //Global GLuint variables
-GLuint crate_texture = Texture::LoadBMP(CRATE_BMP);
-GLuint chassis_texture = Texture::LoadBMP(HUMVEE_BMP);
-GLuint ball_texture = Texture::LoadBMP(BALL_BMP);
-GLuint coin_texture = Texture::LoadBMP(COIN_BMP);
+GLuint crate_texture = 0;
+GLuint chassis_texture = 0;
+GLuint ball_texture = 0;
+GLuint coin_texture = 0;
 GLuint shaderProgramID;
 GLuint skyboxShader;
 GLuint vertexPositionAttribute;
@@ -158,14 +170,7 @@ unsigned int loadCubemap(vector<std::string> faces) {
     return skyboxTextureID;
 }
 
-vector<std::string> facesCubemap = {
-        std::string(TANKGAME_ASSET_DIR) + "/skybox/right.jpg",
-        std::string(TANKGAME_ASSET_DIR) + "/skybox/left.jpg",
-        std::string(TANKGAME_ASSET_DIR) + "/skybox/top.jpg",
-        std::string(TANKGAME_ASSET_DIR) + "/skybox/bottom.jpg",
-        std::string(TANKGAME_ASSET_DIR) + "/skybox/front.jpg",
-        std::string(TANKGAME_ASSET_DIR) + "/skybox/back.jpg"
-};
+vector<std::string> facesCubemap;
 
 float skyboxVertices[] = {
         // positions
@@ -263,7 +268,7 @@ int mazeCell(int x, int z) {
 }
 
 void loadLevel(int level) {
-    string filename = std::string(TANKGAME_ASSET_DIR) + "/maps/maze-level" + to_string(level) + ".txt";
+    string filename = assetPath("maps/maze-level" + to_string(level) + ".txt");
     ifstream file(filename);
 
     if (file.is_open()) {
@@ -287,12 +292,21 @@ void loadLevel(int level) {
     }
 }
 
-unsigned int cubemapTexture = loadCubemap(facesCubemap);
+unsigned int cubemapTexture = 0;
 unsigned int skyboxVAO, skyboxVBO;
 
 //! Main Program Entry
 int main(int argc, char** argv)
 {
+    initAssetRoot();
+    facesCubemap = {
+            assetPath("skybox/right.jpg"),
+            assetPath("skybox/left.jpg"),
+            assetPath("skybox/top.jpg"),
+            assetPath("skybox/bottom.jpg"),
+            assetPath("skybox/front.jpg"),
+            assetPath("skybox/back.jpg")
+    };
     loadLevel(1);
 
     // Create a set of balls
@@ -314,23 +328,23 @@ int main(int argc, char** argv)
     glutSetCursor(GLUT_CURSOR_NONE);
     initShader();
     //initialise objects
-    cube.loadOBJ(CUBE_OBJ);
-    chassis.loadOBJ(CHASSIS_OBJ);
-    frontWheel.loadOBJ(FRONT_WHEEL_OBJ);
-    backWheel.loadOBJ(BACK_WHEEL_OBJ);
-    turret.loadOBJ(TURRET_OBJ);
-    ball.loadOBJ(BALL_OBJ);
-    coin.loadOBJ(COIN_OBJ);
+    cube.loadOBJ(assetPath("models/cube.obj"));
+    chassis.loadOBJ(assetPath("models/chassis.obj"));
+    frontWheel.loadOBJ(assetPath("models/front_wheel.obj"));
+    backWheel.loadOBJ(assetPath("models/back_wheel.obj"));
+    turret.loadOBJ(assetPath("models/turret.obj"));
+    ball.loadOBJ(assetPath("models/ball.obj"));
+    coin.loadOBJ(assetPath("models/coin.obj"));
 
     //Init Camera Manipultor
     cameraManip.setPanTiltRadius(0.0,2*kPi,4.0);
     cameraManip.setFocus(chassis.getMeshCentroid());
 
     //initialise textures
-    initTexture(CRATE_BMP, crate_texture);
-    initTexture(HUMVEE_BMP, chassis_texture);
-    initTexture(BALL_BMP, ball_texture);
-    initTexture(COIN_BMP, coin_texture);
+    initTexture(assetPath("models/crate.bmp"), crate_texture);
+    initTexture(assetPath("models/humvee.bmp"), chassis_texture);
+    initTexture(assetPath("models/ball.bmp"), ball_texture);
+    initTexture(assetPath("models/coin.bmp"), coin_texture);
 
 
     // Create VAO, VBO, and EBO for the skybox
@@ -447,12 +461,12 @@ void initShader()
 {
     //Create shader
     shaderProgramID = Shader::LoadFromFile(
-            std::string(TANKGAME_ASSET_DIR) + "/shader.vert",
-            std::string(TANKGAME_ASSET_DIR) + "/shader.frag"
+            assetPath("shader.vert"),
+            assetPath("shader.frag")
     );
     skyboxShader = Shader::LoadFromFile(
-            std::string(TANKGAME_ASSET_DIR) + "/cubemap.vert",
-            std::string(TANKGAME_ASSET_DIR) + "/cubemap.frag"
+            assetPath("cubemap.vert"),
+            assetPath("cubemap.frag")
     );
 
     // Get a handle for our vertex position buffer

@@ -1,32 +1,36 @@
 # Tank Game (OpenGL, C++, GLUT)
 
-This project builds and runs with **MSYS2 MinGW64** on Windows.
+This project is set up for **Windows + MSYS2 MinGW64** and supports:
+- one-command reopen/build/run for development
+- one-command packaging to a distributable app folder + ZIP
+- optional Windows installer (`Setup.exe`) via Inno Setup
+- automated GitHub Releases on version tags
 
 ## 1) Install MSYS2
 
-Install MSYS2 from:
+Install from:
 - https://www.msys2.org/
 
-Default install path used below:
+Default path used by scripts:
 - `C:\msys64`
 
 ## 2) First-time MSYS2 update (exact commands)
 
-Open **MSYS2 MSYS** terminal and run:
+Open **MSYS2 MSYS** terminal:
 
 ```bash
 pacman -Syu --noconfirm
 ```
 
-Close terminal if it asks, reopen **MSYS2 MSYS**, then run again:
+If prompted, close and reopen **MSYS2 MSYS**, then run again:
 
 ```bash
 pacman -Syu --noconfirm
 ```
 
-## 3) Install build/runtime dependencies (exact command)
+## 3) Dependency install (exact command)
 
-Open **MSYS2 MINGW64** terminal and run:
+Open **MSYS2 MINGW64** terminal:
 
 ```bash
 pacman -S --needed --noconfirm \
@@ -38,25 +42,57 @@ pacman -S --needed --noconfirm \
   mingw-w64-x86_64-glm
 ```
 
-## 4) One-command reopen/build/run from Windows PowerShell
+## 4) One-command reopen/build/run
 
-From repo root:
+From repo root in PowerShell:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\reopen-msys2.ps1
 ```
 
-What it does:
-- Ensures required `mingw-w64-x86_64-*` packages are installed (`--needed`).
-- Configures CMake in `TankGame/build`.
-- Builds the game.
-- Runs `TankGame.exe`.
+This builds and runs the game using MSYS2/MinGW64.
 
-## Optional: manual build in MINGW64 shell
+## 5) One-command package for redistribution
 
-```bash
-cd /c/Users/tsour/Tank_Game_02/Tank_Game/TankGame
-cmake -S . -B build -G Ninja
-cmake --build build -j
-./build/TankGame.exe
+From repo root in PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\package-release.ps1 -Version 1.0.0
 ```
+
+Outputs:
+- `dist\TankGame\` (redistributable app folder)
+- `dist\TankGame-win64-1.0.0.zip`
+- `dist\TankGameSetup-1.0.0.exe` (if Inno Setup is installed)
+
+If you only want ZIP (no installer):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\package-release.ps1 -Version 1.0.0 -SkipInstaller
+```
+
+## 6) Inno Setup (installer tool)
+
+Install Inno Setup from:
+- https://jrsoftware.org/isinfo.php
+
+Installer template in repo:
+- `packaging/TankGame.iss`
+
+## 7) GitHub Release automation
+
+Workflow file:
+- `.github/workflows/release.yml`
+
+Trigger a release by pushing a version tag:
+
+```powershell
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+The workflow builds:
+- ZIP artifact
+- Setup installer artifact
+
+and publishes both to the GitHub Release for that tag.

@@ -1,0 +1,75 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-glew
+            mingw-w64-x86_64-freeglut
+            mingw-w64-x86_64-glm
+
+      - name: Build and stage redistributable folder
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          cd "$GITHUB_WORKSPACE/TankGame"
+          cmake -S . -B build-release -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/dist/TankGame"
+          cmake --build build-release -j
+          cmake --install build-release
+          exe="$GITHUB_WORKSPACE/dist/TankGame/TankGame.exe"
+          deps=$(ldd "$exe" | awk '/=> \/mingw64\/bin\// {print $3}' | sort -u)
+          for dep in $deps; do
+            cp -f "$dep" "$GITHUB_WORKSPACE/dist/TankGame"/
+          done
+
+      - name: Build ZIP artifact
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          $zipName = "TankGame-win64-$version.zip"
+          Compress-Archive -Path "dist/TankGame/*" -DestinationPath "dist/$zipName" -Force
+          "ZIP_PATH=dist/$zipName" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --no-progress -y
+
+      - name: Build installer artifact
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          $iscc = Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"
+          & $iscc "/DAppVersion=$version" "/DSourceDir=$PWD\dist\TankGame" "/DOutputDir=$PWD\dist" "$PWD\packaging\TankGame.iss"
+          $setup = Get-ChildItem dist -Filter "TankGameSetup-$version*.exe" | Select-Object -First 1
+          if (-not $setup) {
+            throw "Installer output not found."
+          }
+          "SETUP_PATH=dist/$($setup.Name)" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ env.ZIP_PATH }}
+            ${{ env.SETUP_PATH }}

@@ -51,6 +51,11 @@ powershell -ExecutionPolicy Bypass -File .\scripts\reopen-msys2.ps1
 ```
 
 This builds and runs the game using MSYS2/MinGW64.
+The script auto-detects common MSYS2 install paths. If needed, override with:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\reopen-msys2.ps1 -Msys2Root "D:\msys64"
+```
 
 ## 5) One-command package for redistribution
 
@@ -69,6 +74,12 @@ If you only want ZIP (no installer):
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\package-release.ps1 -Version 1.0.0 -SkipInstaller
+```
+
+If your MSYS2 is in a custom folder:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\package-release.ps1 -Version 1.0.0 -Msys2Root "D:\msys64"
 ```
 
 ## 6) Inno Setup (installer tool)

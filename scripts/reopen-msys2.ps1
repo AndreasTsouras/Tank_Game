@@ -4,9 +4,32 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$bash = Join-Path $Msys2Root "usr\bin\bash.exe"
-if (!(Test-Path $bash)) {
-    throw "MSYS2 bash not found at '$bash'. Install MSYS2 first (https://www.msys2.org/)."
+function Resolve-Msys2BashPath {
+    param([string]$PreferredRoot)
+
+    $roots = @(
+        $PreferredRoot,
+        "C:\msys64",
+        "D:\msys64",
+        (Join-Path $env:LOCALAPPDATA "msys64"),
+        (Join-Path $env:USERPROFILE "msys64"),
+        (Join-Path ${env:ProgramFiles} "msys64"),
+        (Join-Path ${env:ProgramFiles(x86)} "msys64")
+    ) | Where-Object { $_ -and $_.Trim().Length -gt 0 } | Select-Object -Unique
+
+    foreach ($root in $roots) {
+        $candidate = Join-Path $root "usr\bin\bash.exe"
+        if (Test-Path $candidate) {
+            return $candidate
+        }
+    }
+
+    return $null
+}
+
+$bash = Resolve-Msys2BashPath -PreferredRoot $Msys2Root
+if (-not $bash) {
+    throw "MSYS2 bash not found. Checked common paths plus -Msys2Root '$Msys2Root'. Pass -Msys2Root with your MSYS2 install folder (for example D:\msys64)."
 }
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
